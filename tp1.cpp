@@ -7,21 +7,9 @@
  *
  * Version 1.2 par Jérôme Collin, août 2023
  *
-*/
+ */
 
-#if defined(__has_include)
-  #if __has_include(<avr/io.h>)
-    #include <avr/io.h>
-  #else
-    // Dummy AVR definitions for host compilation
-    #include <cstdint>
-    using uint8_t = std::uint8_t;
-    volatile uint8_t DDRA = 0, DDRB = 0, DDRC = 0, DDRD = 0;
-    volatile uint8_t PORTA = 0, PORTB = 0, PORTC = 0, PORTD = 0;
-  #endif
-#else
-  #include <avr/io.h>
-#endif
+#include <avr/io.h>
 
 int main()
 {
