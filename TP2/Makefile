@@ -172,7 +172,9 @@ clean:
 
 # Pour plus d'information sur les phony target, consulter:
 # http://bit.ly/1WBQe61
-
+dance:
+	echo "Let's dance!"
+	
 # De plus, pour mieux comprendre les makefiles et 
 # leur fonctionnement, consulter la documentation de GNU Make:
 # http://bit.ly/23Vpk8s
