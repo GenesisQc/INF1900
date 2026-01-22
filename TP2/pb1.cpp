@@ -7,6 +7,26 @@
 
 */
 /*
+    Table de vérité de la machine à états :
+    -------------------------------------------------------------
+    Etat present   & Button &  Etat suivant   & Sortie Couleur  \\
+    Init           &  0   &  Init             & Eteint          \\
+    Init           &  1   &  Appuyer1         & Eteint          \\
+    Appuyer1       &  0   &  Relacher1        & Eteint          \\
+    Appuyer1       &  1   &  Appuyer1         & Eteint          \\
+    Relacher1      &  0   &  Relacher1        & Eteint          \\
+    Relacher1      &  1   &  Appuyer2         & Eteint          \\
+    Appuyer2       &  0   &  Relacher2        & Eteint          \\
+    Appuyer2       &  1   &  Appuyer2         & Eteint          \\
+    Relacher2      &  0   &  Relacher2        & Eteint          \\
+    Relacher2      &  1   &  Appuyer3         & Eteint          \\
+    Appuyer3       &  0   &  AllumerVert      & Eteint          \\
+    Appuyer3       &  1   &  Appuyer3         & Eteint          \\
+    AllumerVert    &  X   &  Init             & Vert            \\
+    AllumerVert    &  X   &  Init             & Vert            \\
+    -------------------------------------------------------------
+/*
+
  * ========== I/O IDENTIFICATION (CONNEXIONS SUR LE ROBOT) =============
  *
  *
@@ -33,75 +53,95 @@
  * B-INT0 : bouton
  * =====================================================================
  */
-
-#include <avr/io.h>
 #define F_CPU 8000000
+#include <avr/io.h>
 #include <util/delay.h>
-const int debounceDelay = 50;   // Délai de rebond en millisecondes
-const int DureeAllumage = 2000; // Durée d'allumage de la lumière en millisecondes
-enum Etat
+const uint8_t DelaiRebond = 50;      // Délai ms
+const uint16_t DureeAllumage = 2000; // Durée ms
+enum class Etat
 {
     Init,
-    AttendreRelache,
+    Appuyer1,
+    Relacher1,
+    Appuyer2,
+    Relacher2,
+    Appuyer3,
     AllumerVert
 };
-void AllumerLumiere(int couleur, enum Etat &etat)
+void AllumerLumiere(Etat &etat)
 {
-    etat = (Etat)AllumerVert;
-    PORTA = couleur;          // Allumer la lumière avec la couleur spécifiée
-    _delay_ms(DureeAllumage); // Attendre la durée d'allumage
-    PORTA = 0x00;             // Éteindre la lumière
-    etat = (Etat)Init;
+    etat = Etat::AllumerVert;
+    PORTA |= (1 << PA0);
+    PORTA &= ~(1 << PA1);
+    _delay_ms(DureeAllumage);
+    PORTA &= ~((1 << PA0) | (1 << PA1));
+    etat = Etat::Init;
 }
 bool BoutonPoussoirAppuyer()
 {
     if (PIND & (1 << PD2))
     {
-        _delay_ms(debounceDelay); // Attendre pour le rebond
-        if (PIND & (1 << PD2))
-        {
-            return true; // Le bouton est appuyé
-        }
+        _delay_ms(DelaiRebond);
+        return (PIND & (1 << PD2));
     }
-    return false; // Le bouton n'est pas appuyé
+    return false; 
 }
+void GererEtat(Etat &etat)
+{
+    switch (etat)
+    {
+    case Etat::Init:
+        if (BoutonPoussoirAppuyer())
+        {
+            etat = Etat::Appuyer1;
+        }
+        break;
+    case Etat::Appuyer1:
+        if (!BoutonPoussoirAppuyer())
+        {
+            etat = Etat::Relacher1;
+        }
+        break;
+    case Etat::Relacher1:
+        if (BoutonPoussoirAppuyer())
+        {
+            etat = Etat::Appuyer2;
+        }
+        break;
+    case Etat::Appuyer2:
+        if (!BoutonPoussoirAppuyer())
+        {
+            etat = Etat::Relacher2;
+        }
+        break;
+    case Etat::Relacher2:
+        if (BoutonPoussoirAppuyer())
+        {
+            etat = Etat::Appuyer3;
+        }
+        break;
+    case Etat::Appuyer3:
+        if (!BoutonPoussoirAppuyer())
+        {
+            etat = Etat::AllumerVert;
+        }
+        break;
+    case Etat::AllumerVert:
+        AllumerLumiere(etat);
+        break;
+    }
+}
+
 int main()
 {
-    // Les 4 ports sont en mode sortie sauf pin PD2
-    DDRA = 0xFF;         // 11111111
-    DDRB = 0xFF;         // 11111111
-    DDRC = 0xFF;         // 11111111
-    DDRD &= ~(1 << PD2); // 11111011
+    DDRA |= (1 << PA0) | (1 << PA1);
+    DDRD &= ~(1 << PD2);
 
-    Etat etat = Init;
-    const int vert = 0b00000001;
-    int compteur = 0;
-    bool premierAppui = true;
+    Etat etat = Etat::Init;
+
     while (true)
     {
-        if (BoutonPoussoirAppuyer() && etat == (Etat)Init)
-        {
-            if (premierAppui)
-            {
-                etat = (Etat)AttendreRelache;
-                premierAppui = false;
-            }
-        }
-        else
-        {
-            if (!BoutonPoussoirAppuyer() && etat == (Etat)AttendreRelache)
-            {
-                compteur++;
-                etat = (Etat)Init;
-            }
-            premierAppui = true;
-        }
-
-        if (compteur == 3)
-        {
-            AllumerLumiere(vert, etat);
-            compteur = 0;
-        }
+        GererEtat(etat);
     }
     return 0;
 }
