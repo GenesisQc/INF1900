@@ -1,4 +1,2 @@
 # INF1900
-# INF1900
-# INF1900
-# INF1900
+Projet intégrateur en Génie informatique H26
