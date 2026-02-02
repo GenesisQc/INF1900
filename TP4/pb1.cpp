@@ -60,7 +60,8 @@
 enum class Etat;
 const uint8_t DelaiRebond = 30;      // Délai ms
 const uint16_t DureeAllumage = 2000; // Durée ms
-volatile Etat etat = Etat::Init;
+void AugmenterEtat(volatile Etat &etat);
+void GererEtat(volatile Etat &etat);
 enum class Etat
 {
     Init,
@@ -71,6 +72,7 @@ enum class Etat
     Appuyer3,
     AllumerVert
 };
+volatile Etat etat = Etat::Init;
 void AllumerLumiere(volatile Etat &etat)
 {
     etat = Etat::AllumerVert;
