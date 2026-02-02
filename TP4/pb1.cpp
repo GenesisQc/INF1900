@@ -59,33 +59,33 @@
 #include <avr/interrupt.h>
 const uint8_t DelaiRebond = 30;      // Délai ms
 const uint16_t DureeAllumage = 2000; // Durée ms
-volatile uint8_t compteurRelachements = 0;
+volatile uint8_t compteurClics = 0;
 volatile bool allumer = false;
-
 
 ISR(INT0_vect)
 {
-    _delay_ms(DelaiRebond); 
-    if (PIND & (1 << PD2))
+    _delay_ms(DelaiRebond);
+    if (!(PIND & (1 << PD2)))
     {
-        compteurRelachements++;
+        compteurClics++;
 
-        if (compteurRelachements >= 3)
+        if (compteurClics >= 3)
         {
             allumer = true;
-            compteurRelachements = 0;
+            compteurClics = 0;
         }
     }
 }
 void initialisation()
 {
     cli();
-    DDRA |= (1 << PA0) & (1 << PA1);
-    PORTA &= ~(1 << PA0) & ~(1 << PA1);
+
+    DDRA |= (1 << PA0);
+    PORTA &= ~(1 << PA0);
     DDRD &= ~(1 << PD2);
-    PORTD |= (1 << PD2); 
+    PORTD |= (1 << PD2);
     EICRA &= ~((1 << ISC01) | (1 << ISC00));
-    EICRA |=  (1 << ISC00);
+    EICRA |= (1 << ISC01); 
     EIMSK |= (1 << INT0);
 
     sei();
@@ -99,9 +99,9 @@ int main()
     {
         if (allumer)
         {
-            PORTA |= (1 << PA0);  
+            PORTA |= (1 << PA0);
             _delay_ms(DureeAllumage);
-            PORTA &= ~(1 << PA0);    
+            PORTA &= ~(1 << PA0);
 
             allumer = false;
         }
