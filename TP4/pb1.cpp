@@ -56,8 +56,12 @@
 #define F_CPU 8000000
 #include <avr/io.h>
 #include <util/delay.h>
-const uint8_t DelaiRebond = 50;      // Délai ms
+#include <avr/interrupt.h>
+enum class Etat;
+const uint8_t DelaiRebond = 30;      // Délai ms
 const uint16_t DureeAllumage = 2000; // Durée ms
+void AugmenterEtat(volatile Etat &etat);
+void GererEtat(volatile Etat &etat);
 enum class Etat
 {
     Init,
@@ -68,7 +72,8 @@ enum class Etat
     Appuyer3,
     AllumerVert
 };
-void AllumerLumiere(Etat &etat)
+volatile Etat etat = Etat::Init;
+void AllumerLumiere(volatile Etat &etat)
 {
     etat = Etat::AllumerVert;
     PORTA |= (1 << PA0);
@@ -77,68 +82,65 @@ void AllumerLumiere(Etat &etat)
     PORTA &= ~((1 << PA0) | (1 << PA1));
     etat = Etat::Init;
 }
-bool BoutonPoussoirAppuyer()
+ISR(INT0_vect)
 {
+    _delay_ms(DelaiRebond);
     if (PIND & (1 << PD2))
     {
-        _delay_ms(DelaiRebond);
-        return (PIND & (1 << PD2));
+        AugmenterEtat(etat);
     }
-    return false; 
+    EIFR |= (1 << INTF0); // Clear INT0 flag
 }
-void GererEtat(Etat &etat)
+void initialisation ()
+{
+    cli();                             // Désactiver les interruptions globales
+    DDRA |= (1 << PA0) | (1 << PA1); // Sorties pour les lumières
+    DDRD &= ~(1 << PD2);              // Entrée pour le bouton
+    EIMSK |= (1 << INT0);             // Activer INT0
+    EICRA |= (1 << ISC01) | (1 << ISC00); // Front montant sur INT0
+    sei();                             // Activer les interruptions globales
+}
+void AugmenterEtat(volatile Etat &etat)
 {
     switch (etat)
     {
     case Etat::Init:
-        if (BoutonPoussoirAppuyer())
-        {
-            etat = Etat::Appuyer1;
-        }
+        etat = Etat::Appuyer1;
         break;
     case Etat::Appuyer1:
-        if (!BoutonPoussoirAppuyer())
-        {
-            etat = Etat::Relacher1;
-        }
+        etat = Etat::Relacher1;
         break;
     case Etat::Relacher1:
-        if (BoutonPoussoirAppuyer())
-        {
-            etat = Etat::Appuyer2;
-        }
+        etat = Etat::Appuyer2;
         break;
     case Etat::Appuyer2:
-        if (!BoutonPoussoirAppuyer())
-        {
-            etat = Etat::Relacher2;
-        }
+        etat = Etat::Relacher2;
         break;
     case Etat::Relacher2:
-        if (BoutonPoussoirAppuyer())
-        {
-            etat = Etat::Appuyer3;
-        }
+        etat = Etat::Appuyer3;
         break;
     case Etat::Appuyer3:
-        if (!BoutonPoussoirAppuyer())
-        {
-            etat = Etat::AllumerVert;
-        }
+        etat = Etat::AllumerVert;
         break;
+    default:
+        break;
+    }
+}
+void GererEtat(volatile Etat &etat)
+{
+    switch (etat)
+    {
     case Etat::AllumerVert:
         AllumerLumiere(etat);
+        break;
+    default:
         break;
     }
 }
 
 int main()
 {
-    DDRA |= (1 << PA0) | (1 << PA1);
-    DDRD &= ~(1 << PD2);
-
-    Etat etat = Etat::Init;
-
+    initialisation();
     while (true)
     {
         GererEtat(etat);
