@@ -86,20 +86,20 @@ ISR(INT0_vect)
 {
     uint8_t i = PIND & (1 << PD2);
     _delay_ms(DelaiRebond);
-    if (PIND & (1 << PD2) == i)
+    if ((PIND & (1 << PD2)) == i)
     {
         AugmenterEtat(etat);
     }
     EIFR |= (1 << INTF0); // Clear INT0 flag
 }
-void initialisation ()
+void initialisation()
 {
-    cli();                             // Désactiver les interruptions globales
+    cli();                           // Désactiver les interruptions globales
     DDRA |= (1 << PA0) | (1 << PA1); // Sorties pour les lumières
-    DDRD &= ~(1 << PD2);              // Entrée pour le bouton
-    EIMSK |= (1 << INT0);             // Activer INT0
-    EICRA |=  (1 << ISC00);
-    sei();                             // Activer les interruptions globales
+    DDRD &= ~(1 << PD2);             // Entrée pour le bouton
+    EIMSK |= (1 << INT0);            // Activer INT0
+    EICRA |= (1 << ISC00);
+    sei(); // Activer les interruptions globales
 }
 void AugmenterEtat(volatile Etat &etat)
 {
