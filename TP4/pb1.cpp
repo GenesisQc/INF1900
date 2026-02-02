@@ -57,53 +57,94 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+enum class Etat;
 const uint8_t DelaiRebond = 30;      // Délai ms
 const uint16_t DureeAllumage = 2000; // Durée ms
-volatile uint8_t compteurClics = 0;
-volatile bool allumer = false;
-
+void AugmenterEtat(volatile Etat &etat);
+void GererEtat(volatile Etat &etat);
+enum class Etat
+{
+    Init,
+    Appuyer1,
+    Relacher1,
+    Appuyer2,
+    Relacher2,
+    Appuyer3,
+    AllumerVert
+};
+volatile Etat etat = Etat::Init;
+void AllumerLumiere(volatile Etat &etat)
+{
+    etat = Etat::AllumerVert;
+    PORTA |= (1 << PA0);
+    PORTA &= ~(1 << PA1);
+    _delay_ms(DureeAllumage);
+    PORTA &= ~((1 << PA0) | (1 << PA1));
+    etat = Etat::Init;
+}
 ISR(INT0_vect)
 {
     _delay_ms(DelaiRebond);
-    if ((PIND & (1 << PD2)))
+    if (PIND & (1 << PD2))
     {
-        compteurClics++;
-
-        if (compteurClics >= 3)
-        {
-            allumer = true;
-            compteurClics = 0;
-        }
+        AugmenterEtat(etat);
+        EICRA &= ~(0 << ISC01) | ~(0 << ISC00); // Front montant
+    }
+    EIFR |= (1 << INTF0); // Clear INT0 flag
+}
+void initialisation ()
+{
+    cli();                             // Désactiver les interruptions globales
+    DDRA |= (1 << PA0) | (1 << PA1); // Sorties pour les lumières
+    DDRD &= ~(1 << PD2);              // Entrée pour le bouton
+    EIMSK |= (1 << INT0);             // Activer INT0
+    EICRA |= (1 << ISC01) | (1 << ISC00); // Front montant sur INT0
+    sei();                             // Activer les interruptions globales
+}
+void AugmenterEtat(volatile Etat &etat)
+{
+    switch (etat)
+    {
+    case Etat::Init:
+        etat = Etat::Appuyer1;
+        break;
+    case Etat::Appuyer1:
+        etat = Etat::Relacher1;
+        break;
+    case Etat::Relacher1:
+        etat = Etat::Appuyer2;
+        break;
+    case Etat::Appuyer2:
+        etat = Etat::Relacher2;
+        break;
+    case Etat::Relacher2:
+        etat = Etat::Appuyer3;
+        break;
+    case Etat::Appuyer3:
+        etat = Etat::AllumerVert;
+        break;
+    default:
+        break;
     }
 }
-void initialisation()
+void GererEtat(volatile Etat &etat)
 {
-    cli();
-
-    DDRA |= (1 << PA0);
-    PORTA &= ~(1 << PA0);
-    DDRD &= ~(1 << PD2);
-    PORTD |= (1 << PD2);
-    EICRA &= ~((1 << ISC01) | (1 << ISC00));
-    EICRA |= (1 << ISC01) | (1 << ISC00); 
-    EIMSK |= (1 << INT0);
-
-    sei();
+    switch (etat)
+    {
+    case Etat::AllumerVert:
+        AllumerLumiere(etat);
+        break;
+    default:
+        break;
+    }
 }
 
 int main()
 {
     initialisation();
-
     while (true)
     {
-        if (allumer)
-        {
-            PORTA |= (1 << PA0);
-            _delay_ms(DureeAllumage);
-            PORTA &= ~(1 << PA0);
-
-            allumer = false;
-        }
+        GererEtat(etat);
     }
+    return 0;
 }
