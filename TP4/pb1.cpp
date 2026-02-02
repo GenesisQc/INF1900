@@ -65,7 +65,7 @@ volatile bool allumer = false;
 ISR(INT0_vect)
 {
     _delay_ms(DelaiRebond);
-    if (!(PIND & (1 << PD2)))
+    if ((PIND & (1 << PD2)))
     {
         compteurClics++;
 
