@@ -65,9 +65,17 @@ volatile bool allumer = false;
 
 ISR(INT0_vect)
 {
-    uint8_t buttonState = PIND & (1 << PD2);
-    _delay_ms(DelaiRebond);
-    EIFR |= (1 << INTF0); // Clear INT0 flag
+    _delay_ms(DelaiRebond); 
+    if (PIND & (1 << PD2))
+    {
+        compteurRelachements++;
+
+        if (compteurRelachements >= 3)
+        {
+            allumer = true;
+            compteurRelachements = 0;
+        }
+    }
 }
 void initialisation()
 {
