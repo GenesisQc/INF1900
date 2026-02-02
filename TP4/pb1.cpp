@@ -88,6 +88,7 @@ ISR(INT0_vect)
     if (PIND & (1 << PD2))
     {
         AugmenterEtat(etat);
+        EICRA &= ~(0 << ISC01) | ~(0 << ISC00); // Front montant
     }
     EIFR |= (1 << INTF0); // Clear INT0 flag
 }
