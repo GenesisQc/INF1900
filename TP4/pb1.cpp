@@ -87,7 +87,7 @@ ISR(INT0_vect)
 {
     uint8_t buttonState = PIND & (1 << PD2);
     _delay_ms(DelaiRebond);
-    if (buttonState != (PIND & (1 << PD2)))
+    if (buttonState == (PIND & (1 << PD2)))
     {
         if (buttonState == 0)
         {
