@@ -85,7 +85,7 @@ void initialisation()
     DDRD &= ~(1 << PD2);
     PORTD |= (1 << PD2);
     EICRA &= ~((1 << ISC01) | (1 << ISC00));
-    EICRA |= (1 << ISC01); 
+    EICRA |= (1 << ISC01) | (1 << ISC00); 
     EIMSK |= (1 << INT0);
 
     sei();
