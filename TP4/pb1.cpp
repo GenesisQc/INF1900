@@ -92,7 +92,7 @@ ISR(INT0_vect)
         if (buttonState == 0)
         {
             AugmenterEtat(etat);
-            EICRA &= ~((0 << ISC01) | (0 << ISC00)); // Front descendant sur INT0
+            EICRA &= ~((1 << ISC01) | (1 << ISC00)); // Front descendant sur INT0
         }
         else
         {
