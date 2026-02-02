@@ -62,6 +62,7 @@ const uint8_t DelaiRebond = 30;      // Délai ms
 const uint16_t DureeAllumage = 2000; // Durée ms
 void AugmenterEtat(volatile Etat &etat);
 void GererEtat(volatile Etat &etat);
+volatile const uint8_t current = 1;
 enum class Etat
 {
     Init,
@@ -84,22 +85,31 @@ void AllumerLumiere(volatile Etat &etat)
 }
 ISR(INT0_vect)
 {
+    uint8_t buttonState = PIND & (1 << PD2);
     _delay_ms(DelaiRebond);
-    if (PIND & (1 << PD2))
+    if (buttonState != (PIND & (1 << PD2)))
     {
-        AugmenterEtat(etat);
-        EICRA &= ~((0 << ISC01) | (0 << ISC00)); // Front montant
+        if (buttonState == 0)
+        {
+            AugmenterEtat(etat);
+            EICRA &= ~((0 << ISC01) | (0 << ISC00)); // Front descendant sur INT0
+        }
+        else
+        {
+            AugmenterEtat(etat);
+            EICRA |= (1 << ISC01) | (1 << ISC00);
+        }
     }
     EIFR |= (1 << INTF0); // Clear INT0 flag
 }
-void initialisation ()
+void initialisation()
 {
-    cli();                             // Désactiver les interruptions globales
-    DDRA |= (1 << PA0) | (1 << PA1); // Sorties pour les lumières
-    DDRD &= ~(1 << PD2);              // Entrée pour le bouton
-    EIMSK |= (1 << INT0);             // Activer INT0
+    cli();                                // Désactiver les interruptions globales
+    DDRA |= (1 << PA0) | (1 << PA1);      // Sorties pour les lumières
+    DDRD &= ~(1 << PD2);                  // Entrée pour le bouton
+    EIMSK |= (1 << INT0);                 // Activer INT0
     EICRA |= (1 << ISC01) | (1 << ISC00); // Front montant sur INT0
-    sei();                             // Activer les interruptions globales
+    sei();                                // Activer les interruptions globales
 }
 void AugmenterEtat(volatile Etat &etat)
 {
