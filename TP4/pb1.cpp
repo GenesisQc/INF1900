@@ -80,8 +80,8 @@ ISR(INT0_vect)
 void initialisation()
 {
     cli();
-    DDRA |= (1 << PA0);
-    PORTA &= ~(1 << PA0);
+    DDRA |= (1 << PA0) & (1 << PA1);
+    PORTA &= ~(1 << PA0) & ~(1 << PA1);
     DDRD &= ~(1 << PD2);
     PORTD |= (1 << PD2); 
     EICRA &= ~((1 << ISC01) | (1 << ISC00));
@@ -99,7 +99,7 @@ int main()
     {
         if (allumer)
         {
-            PORTA |= (1 << PA0);     
+            PORTA |= (1 << PA0);  
             _delay_ms(DureeAllumage);
             PORTA &= ~(1 << PA0);    
 
