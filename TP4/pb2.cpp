@@ -1,110 +1,71 @@
 #define F_CPU 8000000
 #include <avr/io.h>
 #include <util/delay.h>
-#define MOTOR_PIN PA0
-#define MOTOR_PIN2 PA2
+#include <avr/interrupt.h>
 
-const uint16_t delay_time = 1; // ms
+volatile uint8_t gMinuterieExpiree;
+volatile uint8_t gBoutonPoussoir;
 
-void pwm_60hz(uint8_t duty)
+void initialisation()
 {
-    switch (duty)
-    {
-    case 0:
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-
-        _delay_ms(16);
-        break;
-
-    case 25:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_ms(4);
-
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-        _delay_ms(12);
-        break;
-
-    case 50:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_ms(8);
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-        _delay_ms(8);
-        break;
-
-    case 75:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_ms(12);
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-        _delay_ms(4);
-        break;
-
-    case 100:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_ms(16);
-        break;
-    }
+    cli();                           // Désactiver les interruptions globales
+    DDRA |= (1 << PA0) | (1 << PA1); // Sorties pour les lumières
+    DDRD &= ~(1 << PD2);             // Entrée pour le bouton
+    EIMSK |= (1 << INT0);            // Activer INT0
+    EIMSK |= (1 << PCINT0);          // Activer PCINT0
+    EICRA |= (1 << ISC00);           // Déclenchement INT0 sur front quelconque
+    sei();                           // Activer les interruptions globales
 }
-void pwm_400hz(uint8_t duty)
+void demarrerMinuterie(uint16_t duree)
 {
-    switch (duty)
-    {
-    case 0:
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-        _delay_us(2500);
-        break;
-
-    case 25:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_us(625);
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-        _delay_us(1875);
-        break;
-
-    case 50:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_us(1250);
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-        _delay_us(1250);
-        break;
-
-    case 75:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_us(1875);
-        PORTA &= ~((1 << MOTOR_PIN) | (1 << MOTOR_PIN2));
-        _delay_us(625);
-        break;
-
-    case 100:
-        PORTA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2);
-        _delay_us(2500);
-        break;
+    gMinuterieExpiree = 0;
+    for (uint16_t i = 0; i < duree; i += 10){
+        _delay_ms(10);
     }
+    gMinuterieExpiree = 1;
+    // Configuration de la minuterie pour une durée donnée
+    // (implémentation spécifique dépendante du matériel)
 }
-
-int main(void)
+ISR(INT0_vect)
 {
-    DDRA |= (1 << MOTOR_PIN) | (1 << MOTOR_PIN2); // Configure MOTOR_PIN as output
-
-    uint8_t duties[] = {0, 25, 50, 75, 100};
-
-    // 60 Hz
-    while (1)
+    gBoutonPoussoir = 1;
+    _delay_ms(30); // Délai de rebond
+    if ((PIND & (1 << PD2)) != 0)
     {
-        for (uint8_t d = 0; d < 5; d++)
+        gBoutonPoussoir = 0;
+        demarrerMinuterie(1000); // Démarrer la minuterie pour 1000 ms
+    }
+    EIFR |= (1 << INTF0); // Clear INT0 flag
+}
+void flasherLumiere()
+{
+    PORTA |= (1 << PA0);  // Allumer la lumière verte
+    _delay_ms(10);        // Durée d'allumage
+    PORTA &= ~(1 << PA0); // Éteindre la lumière verte
+}
+ISR(PCINT0_vect)
+{
+    gMinuterieExpiree = 1;
+}
+int main()
+{
+    initialisation();
+    while (true)
+    {
+        _delay_ms(10000);
+        flasherLumiere();
+        demarrerMinuterie(1000);
+        if (gBoutonPoussoir)
         {
-            for (uint16_t i = 0; i < 120; i++)
-            {
-                pwm_60hz(duties[d]);
-            }
+            PORTA |= (1 << PA1);  // Allumer la lumière rouge
+            _delay_ms(2000);      // Durée d'allumage
+            PORTA &= ~(1 << PA1); // Éteindre la lumière rouge
         }
-
-        // 400 Hz
-        for (uint8_t d = 0; d < 5; d++)
+        else
         {
-            for (uint16_t i = 0; i < 800; i++)
-            {
-                pwm_400hz(duties[d]);
-            }
+            PORTA |= (1 << PA0);  // Allumer la lumière verte
+            _delay_ms(2000);      // Durée d'allumage
+            PORTA &= ~(1 << PA0); // Éteindre la lumière verte
         }
     }
 }
