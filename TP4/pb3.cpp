@@ -5,8 +5,8 @@
 
 
     /*ok laurent du futur ocr1a et ocr1b sont des registres de 8 bits, donc on peut leur assigner directement une valeur entre 0 et 255
-     ocr veut oc (output compare register) sa veut dire que si tu met le timer en mode comparaison quand il atteint ce chiffre il va faire quelle
-     que chose ensuite de cela 
+     ocr veut dire (output compare register) sa veut dire que si tu met le timer en mode comparaison quand il atteint ce chiffre il va faire quelle
+     que chose il est souvant referer dans la documentation comme le TOP ensuite de cela 
 
      ******** TCCR1B TCCRnB – Timer/Counter n Control Register est fait comme cela ICNCn ICESn – WGMn3 WGMn2 CSn2 CSn1 CSn0 *******
      ******** TCCR1A TCCRnA – Timer/Counter n Control Register est fait comme cela COMnA1 COMnA0 COMnB1 COMnB0 – WGMn1 WGMn0 ********
@@ -17,21 +17,23 @@
 
     Description: WGMn3 WGMn2 WGMn1 WGMn0
 
-    0 0000Normal0xFFFFImmediateMAX
-    1 0001PWM, Phase Correct, 8-bit 0x00FF TOP BOTTOM
-    2 0010PWM, Phase Correct, 9-bit 0x01FF TOP BOTTOM
-    3 0011PWM, Phase Correct, 10-bit 0x03FF TOP BOTTOM
-    4 0100CTCOCRnAImmediateMAX
-    5 0101Fast PWM, 8-bit 0x00FF BOTTOM TOP
-    6 0110Fast PWM, 9-bit 0x01FF BOTTOM TOP
-    7 0111Fast PWM, 10-bit 0x03FF BOTTOM TOP
-    8 1000PWM, Phase and Frequency
+                                        Update of OCRnx at
+    0 0000 Normal0xFFFFImmediateMAX          |
+                                             v
+    1 0001 PWM, Phase Correct, 8-bit 0x00FF TOP BOTTOM
+    2 0010 PWM, Phase Correct, 9-bit 0x01FF TOP BOTTOM
+    3 0011 PWM, Phase Correct, 10-bit 0x03FF TOP BOTTOM
+    4 0100 CTCOCRnAImmediateMAX
+    5 0101 Fast PWM, 8-bit 0x00FF BOTTOM TOP
+    6 0110 Fast PWM, 9-bit 0x01FF BOTTOM TOP
+    7 0111 Fast PWM, 10-bit 0x03FF BOTTOM TOP
+    8 1000 PWM, Phase and Frequency
     Correct ICRn BOTTOM BOTTOM
-    9 1001PWM, Phase and Frequency
+    9 1001 PWM, Phase and Frequency
     Correct OCRnA BOTTOM BOTTOM
-    10 1010PWM, Phase Correct ICRn TOP BOTTOM
-    11 1011PWM, Phase Correct OCRnA TOP BOTTOM
-    12 1100CTCICRnImmediateMAX
+    10 1010 PWM, Phase Correct ICRn TOP BOTTOM
+    11 1011 PWM, Phase Correct OCRnA TOP BOTTOM
+    12 1100 CTCICRnImmediateMAX
     13 1101(Reserved)–––
     14 1110Fast PWM ICRn BOTTOM TOP
     15 1111Fast PWM OCRnA BOTTOM TOP
@@ -48,6 +50,22 @@
     111 External clock source on Tn pin. Clock on rising edge.
      et le mode de fonctionnement du timer (WGMn3 WGMn2) et les options de comparaison (COMnA1 COMnA0 COMnB1 COMnB0) qui sont dans
 
+    Description : COMnA1 COMnA0 COMnB1 COMnB0
+    COMnA1/COMnB1 COMnA0/COMnB0
+    0 0 Normal port operation, OCnA/OCnB disconnected.
+
+    0 1 WGMn3:0 = 9 or 11: Toggle OCnA on Compare
+    Match, OCnB disconnected (normal port operation).
+    For all other WGM1 settings, normal port operation,
+    OC1A/OC1B disconnected.
+
+    1 0 Clear OCnA/OCnB on Compare Match when up-
+    counting. Set OCnA/OCnB on Compare Match when
+    downcounting.
+
+    1 1 Set OCnA/OCnB on Compare Match when up-
+    counting. Clear OCnA/OCnB on Compare Match
+    when downcounting.
 
 
 TCCRnB*/

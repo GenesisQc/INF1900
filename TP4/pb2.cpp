@@ -43,7 +43,8 @@ void partirMinuterie(uint16_t duree)
 
     TCCR1A = 0; // Mode CTC
 
-    TCCR1B = (1 << WGM12) | (1 << CS12) | (1 << CS10); // Horloge divisée par 1024
+    TCCR1B = (1 << WGM12) | (1 << CS12) | (1 << CS10); // Horloge divisée par 1024 dans la doc les cs sont pour le prescaler et le wgm pour le mode de fonctionnement du timer en ctc
+                                                       // pour dire clear on compare match, donc le timer va compter jusqu'à la valeur dans ocr1a et ensuite il va se remettre à zéro et déclencher l'interruption
 
     TCCR1C = 0; // Pas utilisé
 
