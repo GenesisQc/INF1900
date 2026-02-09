@@ -98,7 +98,7 @@ void initialisation()
     DDRA |= (1 << PA0) | (1 << PA1); // Sorties pour les lumières
     DDRD &= ~(1 << PD2);             // Entrée pour le bouton
     EIMSK |= (1 << INT0);            // Activer INT0
-    EICRA |= (1 << ISC00);
+    EICRA |= (1 << ISC00);           // Déclenchement INT0 sur front quelconque
     sei(); // Activer les interruptions globales
 }
 void AugmenterEtat(volatile Etat &etat)

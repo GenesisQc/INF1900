@@ -5,6 +5,17 @@
 
 volatile uint8_t gMinuterieExpiree;
 volatile uint8_t gBoutonPoussoir;
+void flasherLumiere();
+
+ISR(INT0_vect)
+{
+    gBoutonPoussoir = 1;
+    EIFR |= (1 << INTF0); // Clear INT0 flag
+}
+ISR(TIMER1_COMPA_vect)
+{
+    gMinuterieExpiree = 1;
+}
 
 void initialisation()
 {
@@ -12,30 +23,31 @@ void initialisation()
     DDRA |= (1 << PA0) | (1 << PA1); // Sorties pour les lumières
     DDRD &= ~(1 << PD2);             // Entrée pour le bouton
     EIMSK |= (1 << INT0);            // Activer INT0
-    EIMSK |= (1 << PCINT0);          // Activer PCINT0
     EICRA |= (1 << ISC00);           // Déclenchement INT0 sur front quelconque
-    sei();                           // Activer les interruptions globales
+    sei();                           // Activer les interruptions globales                           // Activer les interruptions globales
 }
-void demarrerMinuterie(uint16_t duree)
+void partirMinuterie(uint16_t duree)
 {
+    // 80000000 / 1024 = 7812.5 ticks par seconde
+    // 2^16 - 1 = 65535
+    // Durée maximale = 65535 / 7812.5 = 8.39 secondes
+
     gMinuterieExpiree = 0;
-    for (uint16_t i = 0; i < duree; i += 10){
-        _delay_ms(10);
-    }
-    gMinuterieExpiree = 1;
-    // Configuration de la minuterie pour une durée donnée
-    // (implémentation spécifique dépendante du matériel)
-}
-ISR(INT0_vect)
-{
-    gBoutonPoussoir = 1;
-    _delay_ms(30); // Délai de rebond
-    if ((PIND & (1 << PD2)) != 0)
-    {
-        gBoutonPoussoir = 0;
-        demarrerMinuterie(1000); // Démarrer la minuterie pour 1000 ms
-    }
-    EIFR |= (1 << INTF0); // Clear INT0 flag
+    // mode CTC du timer 1 avec horloge divisée par 1024
+
+    // interruption après la durée spécifiée
+
+    TCNT1 = 0; // Remise à zéro du compteur
+
+    OCR1A = duree; // Valeur de comparaison
+
+    TCCR1A = 0; // Mode CTC
+
+    TCCR1B = (1 << WGM12) | (1 << CS12) | (1 << CS10); // Horloge divisée par 1024
+
+    TCCR1C = 0; // Pas utilisé
+
+    TIMSK1 = (1 << OCIE1A); // Activer l'interruption du timer 1
 }
 void flasherLumiere()
 {
@@ -43,29 +55,37 @@ void flasherLumiere()
     _delay_ms(10);        // Durée d'allumage
     PORTA &= ~(1 << PA0); // Éteindre la lumière verte
 }
-ISR(PCINT0_vect)
-{
-    gMinuterieExpiree = 1;
-}
+
 int main()
 {
     initialisation();
+    bool boutonAppuye = false;
     while (true)
     {
         _delay_ms(10000);
+        gBoutonPoussoir = 0;
         flasherLumiere();
-        demarrerMinuterie(1000);
-        if (gBoutonPoussoir)
+        partirMinuterie(7812); // 1 secondes
+        while (!gMinuterieExpiree)
         {
-            PORTA |= (1 << PA1);  // Allumer la lumière rouge
-            _delay_ms(2000);      // Durée d'allumage
-            PORTA &= ~(1 << PA1); // Éteindre la lumière rouge
+            if (gBoutonPoussoir)
+            {
+                boutonAppuye = true;
+            }
+        }
+        if (boutonAppuye)
+        {
+            boutonAppuye = false;
+            PORTA |= (1 << PA1); // Allumer la lumière rouge
+            PORTA &= ~(1 << PA0); // Éteindre la lumière verte
         }
         else
         {
-            PORTA |= (1 << PA0);  // Allumer la lumière verte
-            _delay_ms(2000);      // Durée d'allumage
-            PORTA &= ~(1 << PA0); // Éteindre la lumière verte
+            PORTA |= (1 << PA0); // Éteindre la lumière rouge
         }
+        _delay_ms(1000);
+        PORTA &= ~(1 << PA1); // Éteindre la lumière rouge
+        PORTA &= ~(1 << PA0); // Éteindre la lumière verte
+        
     }
 }
